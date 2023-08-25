@@ -1,0 +1,276 @@
+import bpy
+import bmesh
+import math
+
+class RenderProperties(bpy.types.PropertyGroup):
+    mockFloat : bpy.props.FloatProperty(name="Mock Float", description="Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
+    mockBool : bpy.props.BoolProperty(name="Mock Boolean", description="Enable Setting", default=True)
+
+    meshQuality : bpy.props.FloatProperty(name="Mesh", description="Mesh Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
+
+    modifierQuality : bpy.props.FloatProperty(name="Modifiers", description="Modifiers Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
+    subdivMod : bpy.props.BoolProperty(name="Subdivision Surface/Multiresolution Modifier Optimizations", description="Enable Optimizations On Subdivision Surface and Multiresolution Modifiers (Lowers Quality)", default=True)
+    bevelMod : bpy.props.BoolProperty(name="Bevel Modifier Optimizations", description="Enable Optimizations On Bevel Modifiers (Lowers Quality)", default=True)
+    remeshMod : bpy.props.BoolProperty(name="Remesh Modifier Optimizations", description="Enable Optimizations On Remesh Modifiers (Lowers Quality)", default=True)
+
+    textureQuality : bpy.props.FloatProperty(name="Textures", description="Texture Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
+
+    lightingQuality : bpy.props.FloatProperty(name="Lighting", description="Lighting Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
+
+    renderQuality : bpy.props.FloatProperty(name="Rendering", description="Render Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
+    noiseThreshold : bpy.props.BoolProperty(name="Noise Threshold Optimizations", description="Enable Optimizations For Rendered Noise (Lowers Quality)", default=True)
+    samples : bpy.props.BoolProperty(name="Render Samples Optimizations", description="Enable Optimizations For Render Samples (Lowers Quality)", default=True)
+    hdri : bpy.props.BoolProperty(name="HDRI Optimizations", description="Enable Optimizations For HDRIs (Lowers Quality)", default=True)
+
+    imageQuality : bpy.props.FloatProperty(name="Image", description="Image Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
+    colorQuality : bpy.props.FloatProperty(name="Colors", description="Color Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
+    resolution : bpy.props.BoolProperty(name="Image Resolution Optimizations", description="Enable Optimizations For Final Image Resolution (Lowers Quality)", default=True)
+    
+    
+    autoOptimizations : bpy.props.BoolProperty(name="Default Optimizations", description="Enable Settings For Universal Optimizations", default=True)
+    
+    finalRender : bpy.props.BoolProperty(name="Final Render Mode", description="Enable Finalized Rendering Mode (Highest Fidelity)", default=False)
+
+
+class RSO_PT_head_panel(bpy.types.Panel):
+    bl_label = "Rendering Settings Optimizer"
+    bl_idname = "RSO_PT_head_panel"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "RSO"
+    bl_order = 0
+ 
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        renderingTools = scene.renderingTools
+        
+        layout.prop(renderingTools, "autoOptimizations")
+        layout.prop(renderingTools, "finalRender")
+        layout.operator("rso.run")
+        
+        
+
+class RSO_PT_advanced_panel_mesh(bpy.types.Panel):
+    bl_label = "Mesh Quality Settings"
+    bl_idname = "RSO_PT_advanced_panel_mesh"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "RSO"
+    bl_parent_id = "RSO_PT_head_panel"
+    bl_options = {'DEFAULT_CLOSED'}
+ 
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        renderingTools = scene.renderingTools
+        
+        layout.prop(renderingTools, "meshQuality", slider=True)
+        
+class RSO_PT_advanced_panel_mod(bpy.types.Panel):
+    bl_label = "Modifier Quality Settings"
+    bl_idname = "RSO_PT_advanced_panel_mod"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "RSO"
+    bl_parent_id = "RSO_PT_head_panel"
+    bl_options = {'DEFAULT_CLOSED'}
+ 
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        renderingTools = scene.renderingTools
+        
+        layout.prop(renderingTools, "modifierQuality", slider=True)
+        layout.prop(renderingTools, "subdivMod")
+        layout.prop(renderingTools, "bevelMod")
+        layout.prop(renderingTools, "remeshMod")
+        layout.prop(renderingTools, "smoothMod")
+        
+class RSO_PT_advanced_panel_texture(bpy.types.Panel):
+    bl_label = "Texture Quality Settings"
+    bl_idname = "RSO_PT_advanced_panel_texture"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "RSO"
+    bl_parent_id = "RSO_PT_head_panel"
+    bl_options = {'DEFAULT_CLOSED'}
+ 
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        renderingTools = scene.renderingTools
+        
+        layout.prop(renderingTools, "textureQuality", slider=True)
+        
+class RSO_PT_advanced_panel_light(bpy.types.Panel):
+    bl_label = "Lighting Quality Settings"
+    bl_idname = "RSO_PT_advanced_panel_light"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "RSO"
+    bl_parent_id = "RSO_PT_head_panel"
+    bl_options = {'DEFAULT_CLOSED'}
+ 
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        renderingTools = scene.renderingTools
+        
+        layout.prop(renderingTools, "lightingQuality", slider=True)
+        
+class RSO_PT_advanced_panel_render(bpy.types.Panel):
+    bl_label = "Render Quality Settings"
+    bl_idname = "RSO_PT_advanced_panel_render"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "RSO"
+    bl_parent_id = "RSO_PT_head_panel"
+    bl_options = {'DEFAULT_CLOSED'}
+ 
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        renderingTools = scene.renderingTools
+        
+        layout.prop(renderingTools, "renderQuality", slider=True)
+        layout.prop(renderingTools, "noiseThreshold")
+        layout.prop(renderingTools, "samples")
+        layout.prop(renderingTools, "hdri")
+        
+class RSO_PT_advanced_panel_image(bpy.types.Panel):
+    bl_label = "Image Quality Settings"
+    bl_idname = "RSO_PT_advanced_panel_image"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "RSO"
+    bl_parent_id = "RSO_PT_head_panel"
+    bl_options = {'DEFAULT_CLOSED'}
+ 
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        renderingTools = scene.renderingTools
+        
+        layout.prop(renderingTools, "imageQuality", slider=True)
+        layout.prop(renderingTools, "colorQuality", slider=True)
+        layout.prop(renderingTools, "resolution")
+
+class RSO_OT_run(bpy.types.Operator):
+    bl_idname = "rso.run"
+    bl_label = "Apply Settings"
+    
+    def execute(self, context):
+        for coll in bpy.data.collections:
+            coll.hide_viewport = True
+            coll.hide_render = True
+            
+            if coll.name != "RSOCollection":
+                copy = [obj for obj in coll.all_objects]
+                for obj in copy:
+                    obj.hide_viewport = True
+                    obj.hide_render = True
+                    
+            if coll.name == "RSOCollection":
+                for object in coll.objects:
+                    bpy.context.view_layer.objects.active = object
+                    bpy.ops.object.delete()
+                bpy.data.collections.remove(coll)
+
+        collection = bpy.data.collections.new(name="RSOCollection")
+        bpy.context.scene.collection.children.link(collection)                
+        
+        
+        for object in context.scene.objects:
+            if object.type == 'MESH' and object.users_collection[0].name != "RSOCollection":
+                
+            # PREPARE
+            
+                editObject = object.copy()
+                collection.objects.link(editObject)
+                editObject.data = editObject.data.copy()
+                bpy.context.view_layer.objects.active = editObject
+                
+                object.hide_viewport = True
+                object.hide_render = True
+                
+                renderingTools = context.scene.renderingTools
+            
+            # MESH
+                
+                decimate = editObject.modifiers.new(name="Decimate", type='DECIMATE')
+                decimate.decimate_type = "COLLAPSE"
+                decimate.ratio = renderingTools.meshQuality/100
+                bpy.ops.object.modifier_apply(modifier=decimate.name)
+                    
+            # MODIFIERS
+                
+                for sub in bpy.data.objects[editObject.name].modifiers:
+                    if(sub.type == "SUBSURF" and renderingTools.subdivMod == True):
+                        
+                        sub.levels = round(sub.levels * renderingTools.modifierQuality/100)
+                        sub.render_levels = round(sub.render_levels * renderingTools.modifierQuality/100)
+                
+                    if(sub.type == "MULTIRES" and renderingTools.subdivMod == True):
+                        
+                        sub.levels = round(sub.levels * renderingTools.modifierQuality/100)
+                        sub.sculpt_levels = round(sub.sculpt_levels * renderingTools.modifierQuality/100)
+                        sub.render_levels = round(sub.render_levels * renderingTools.modifierQuality/100)
+                        
+                    if(sub.type == "BEVEL" and renderingTools.bevelMod == True):
+                        
+                        sub.segments = round(sub.segments * renderingTools.modifierQuality/100)
+                        
+                    if(sub.type == "REMESH" and renderingTools.remeshMod == True):
+                        
+                        sub.octree_depth = round(sub.octree_depth * renderingTools.modifierQuality/100)
+                        sub.voxel_size = sub.voxel_size * sub.voxel_size * renderingTools.modifierQuality
+            
+            # TEXTURE
+            
+                #dist = (editObject.location - bpy.context.scene.camera.location).length
+                #print(dist)
+                
+                #textureRes = (renderingTools.textureQuality/100) ** (dist/10)
+                
+            for mat in bpy.data.materials:
+                if mat.node_tree:
+                    for node in mat.node_tree.nodes:
+                        if node.type == 'TEX_IMAGE':
+                            img = bpy.data.materials[mat.name].node_tree.nodes["Image Texture"].image
+                            saveImg = img.copy()
+                            print(saveImg)
+                            saveImg = saveImg.save(filepath="\savedtexts")
+                            from PIL import Image
+                            print(img)
+                                
+                                
+            # LIGHTING
+            
+            # MODIFIERS
+            
+            # RENDER
+            
+            # AUTO
+
+        return {"FINISHED"}
+    
+classes = [RenderProperties, RSO_OT_run, RSO_PT_head_panel, RSO_PT_advanced_panel_mesh, RSO_PT_advanced_panel_mod, RSO_PT_advanced_panel_texture, RSO_PT_advanced_panel_light, RSO_PT_advanced_panel_render, RSO_PT_advanced_panel_image]
+ 
+ 
+ 
+def register():
+    for cls in classes:
+        bpy.utils.register_class(cls)
+        
+        bpy.types.Scene.renderingTools = bpy.props.PointerProperty(type=RenderProperties)
+ 
+def unregister():
+    for cls in classes:
+        bpy.utils.unregister_class(cls)
+        del bpy.types.Scene.renderingTools
+ 
+ 
+ 
+if __name__ == "__main__":
+    register()
