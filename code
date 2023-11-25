@@ -1,6 +1,11 @@
 import bpy
 import bmesh
 import math
+from datetime import datetime
+import csv
+import numpy as np
+from PIL import Image, ImageMath
+
 
 class RenderProperties(bpy.types.PropertyGroup):
     mockFloat : bpy.props.FloatProperty(name="Mock Float", description="Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
@@ -12,8 +17,6 @@ class RenderProperties(bpy.types.PropertyGroup):
     subdivMod : bpy.props.BoolProperty(name="Subdivision Surface/Multiresolution Modifier Optimizations", description="Enable Optimizations On Subdivision Surface and Multiresolution Modifiers (Lowers Quality)", default=True)
     bevelMod : bpy.props.BoolProperty(name="Bevel Modifier Optimizations", description="Enable Optimizations On Bevel Modifiers (Lowers Quality)", default=True)
     remeshMod : bpy.props.BoolProperty(name="Remesh Modifier Optimizations", description="Enable Optimizations On Remesh Modifiers (Lowers Quality)", default=True)
-
-    textureQuality : bpy.props.FloatProperty(name="Textures", description="Texture Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
 
     lightingQuality : bpy.props.FloatProperty(name="Lighting", description="Lighting Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
 
@@ -87,22 +90,6 @@ class RSO_PT_advanced_panel_mod(bpy.types.Panel):
         layout.prop(renderingTools, "remeshMod")
         layout.prop(renderingTools, "smoothMod")
         
-class RSO_PT_advanced_panel_texture(bpy.types.Panel):
-    bl_label = "Texture Quality Settings"
-    bl_idname = "RSO_PT_advanced_panel_texture"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = "RSO"
-    bl_parent_id = "RSO_PT_head_panel"
-    bl_options = {'DEFAULT_CLOSED'}
- 
-    def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-        renderingTools = scene.renderingTools
-        
-        layout.prop(renderingTools, "textureQuality", slider=True)
-        
 class RSO_PT_advanced_panel_light(bpy.types.Panel):
     bl_label = "Lighting Quality Settings"
     bl_idname = "RSO_PT_advanced_panel_light"
@@ -162,13 +149,10 @@ class RSO_OT_run(bpy.types.Operator):
     
     def execute(self, context):
         for coll in bpy.data.collections:
-            coll.hide_viewport = True
             coll.hide_render = True
-            
             if coll.name != "RSOCollection":
                 copy = [obj for obj in coll.all_objects]
                 for obj in copy:
-                    obj.hide_viewport = True
                     obj.hide_render = True
                     
             if coll.name == "RSOCollection":
@@ -182,6 +166,9 @@ class RSO_OT_run(bpy.types.Operator):
         
         
         for object in context.scene.objects:
+            if object.users_collection[0].name == "RSOCollection":
+                object.hide_render = False
+                
             if object.type == 'MESH' and object.users_collection[0].name != "RSOCollection":
                 
             # PREPARE
@@ -191,7 +178,6 @@ class RSO_OT_run(bpy.types.Operator):
                 editObject.data = editObject.data.copy()
                 bpy.context.view_layer.objects.active = editObject
                 
-                object.hide_viewport = True
                 object.hide_render = True
                 
                 renderingTools = context.scene.renderingTools
@@ -225,40 +211,159 @@ class RSO_OT_run(bpy.types.Operator):
                         
                         sub.octree_depth = round(sub.octree_depth * renderingTools.modifierQuality/100)
                         sub.voxel_size = sub.voxel_size * sub.voxel_size * renderingTools.modifierQuality
-            
-            # TEXTURE
-            
-                #dist = (editObject.location - bpy.context.scene.camera.location).length
-                #print(dist)
-                
-                #textureRes = (renderingTools.textureQuality/100) ** (dist/10)
-                
-            for mat in bpy.data.materials:
-                if mat.node_tree:
-                    for node in mat.node_tree.nodes:
-                        if node.type == 'TEX_IMAGE':
-                            img = bpy.data.materials[mat.name].node_tree.nodes["Image Texture"].image
-                            saveImg = img.copy()
-                            print(saveImg)
-                            saveImg = saveImg.save(filepath="\savedtexts")
-                            from PIL import Image
-                            print(img)
                                 
                                 
             # LIGHTING
+                
+        samples = bpy.context.scene.cycles.samples 
+        bpy.context.scene.cycles.samples = 1
+        bpy.context.scene.update_tag()
+        
+        bounces = bpy.context.scene.cycles.max_bounces
+        diff = bpy.context.scene.cycles.diffuse_bounces
+        gloss = bpy.context.scene.cycles.glossy_bounces
+        transm = bpy.context.scene.cycles.transmission_bounces
+        vol = bpy.context.scene.cycles.volume_bounces
+        transp = bpy.context.scene.cycles.transparent_max_bounces
+        
+        file = 'D:/Blender Files/Blender Renders/Polygence/data.csv'
+
+        with open(file, 'w', newline='') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(['Name', 'Render', 'Bounces', 'Diffuse', 'Transmission', 'Volume', 'Transparent', 'Quality', 'Difference'])
+        
+        
+        vals = [bounces, diff, gloss, transm, vol, transp]
+        refs = ["bpy.context.scene.cycles.max_bounces", "bpy.context.scene.cycles.diffuse_bounces", "bpy.context.scene.cycles.glossy_bounces", "bpy.context.scene.cycles.transmission_bounces", "bpy.context.scene.cycles.volume_bounces", "bpy.context.scene.cycles.transparent_max_bounces"]
+        percents = [0, 50]
+        
+        
+        renderData("Default", vals[0], refs[0])
+        
+        testData(vals, refs, percents)
+        
+        resetBounces(bounces, diff, gloss, transm, vol, transp)
+                
+        print("DONE")
+        
+        fileContent = []
+        normalizedVals = []
+        
+        with open(file, newline='') as csvfile:
+            csvreader = csv.reader(csvfile)
+            header = next(csvreader)
             
-            # MODIFIERS
+            for row in csvreader:
+                fileContent.append(row)
+                
             
+        maxVal = 0
+        maxTime = 0
+        minTime = 0
+        
+        for row in fileContent:
+            
+            if row[0] == "Default":
+                maxTime = float(row[1].replace(":",""))
+                minTime = float(row[1].replace(":",""))
+            
+            if maxVal < float(row[8]):
+                maxVal = float(row[8])
+                
+            if maxTime > float(row[1].replace(":","")):
+                maxTime = float(row[1].replace(":",""))
+                
+            if minTime < float(row[1].replace(":","")):
+                minTime = float(row[1].replace(":",""))
+        
+        for row in fileContent:
+            time = float(row[1].replace(":","")) - minTime
+            time = time / (maxTime - minTime)
+            
+            val = float(row[8])
+            val = val / (maxVal)
+            
+            normalized = (0.5 * val) + ((1 - 0.5) * time)
+            normalizedVals.append("FINAL VALUE: " + str(normalized) + " | NAME: " + str(row[0]))
+            
+        file = 'D:/Blender Files/Blender Renders/Polygence/finalData.csv'
+        with open(file, 'w', newline='') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(normalizedVals)
+        
+        
             # RENDER
             
+            # IMAGE
+            
             # AUTO
+            
+        for coll in bpy.data.collections:
+            coll.hide_render = False
+            if coll.name != "RSOCollection":
+                for obj in coll.all_objects:
+                    obj.hide_render = False
+                    
+            if coll.name == "RSOCollection":
+                bpy.data.collections.remove(coll)
 
         return {"FINISHED"}
     
-classes = [RenderProperties, RSO_OT_run, RSO_PT_head_panel, RSO_PT_advanced_panel_mesh, RSO_PT_advanced_panel_mod, RSO_PT_advanced_panel_texture, RSO_PT_advanced_panel_light, RSO_PT_advanced_panel_render, RSO_PT_advanced_panel_image]
- 
- 
- 
+classes = [RenderProperties, RSO_OT_run, RSO_PT_head_panel, RSO_PT_advanced_panel_mesh, RSO_PT_advanced_panel_mod, RSO_PT_advanced_panel_light, RSO_PT_advanced_panel_render, RSO_PT_advanced_panel_image]
+
+
+def testData(vals, refs, percents):
+    for ref in refs:
+        for percent in percents:
+            val = vals[refs.index(ref)]
+            name = "".join([str(ref), str(f"{percent : 04d}")])
+            renderData(name, (percent*val/100), ref)
+            exec(f"{ref} = {val}")
+    
+def renderData(name, edit, editName):
+     
+    for coll in bpy.data.collections:
+        if coll.name == "RSOCollection":
+            coll.hide_render = False
+            for c in coll.all_objects:
+                c.hide_render = False 
+     
+    edit = int(edit)
+    exec(f"{editName} = {edit}")
+    
+    filepath = 'D:/Blender Files/Blender Renders/Polygence/TestSample' + name + '.png'
+    bpy.context.scene.render.filepath = filepath
+    start = datetime.now()
+    bpy.ops.render.render(write_still = True)
+    end = datetime.now() - start
+    
+    file = 'D:/Blender Files/Blender Renders/Polygence/data.csv'
+    
+    err = compareImage("Default", name)
+    
+    with open(file, 'a', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow([name, end, bpy.context.scene.cycles.max_bounces, bpy.context.scene.cycles.diffuse_bounces, bpy.context.scene.cycles.glossy_bounces, bpy.context.scene.cycles.transmission_bounces, bpy.context.scene.cycles.volume_bounces, bpy.context.scene.cycles.transparent_max_bounces, err])
+        
+def resetBounces(bounces, diff, gloss, transm, vol, transp):
+    bpy.context.scene.cycles.max_bounces = bounces
+    bpy.context.scene.cycles.diffuse_bounces = diff
+    bpy.context.scene.cycles.glossy_bounces = gloss
+    bpy.context.scene.cycles.transmission_bounces = transm
+    bpy.context.scene.cycles.volume_bounces = vol
+    bpy.context.scene.cycles.transparent_max_bounces = transp
+    
+def compareImage(imageA, imageB):
+    filepathA = 'D:/Blender Files/Blender Renders/Polygence/TestSample' + imageA + '.png'
+    filepathB = 'D:/Blender Files/Blender Renders/Polygence/TestSample' + imageB + '.png'
+    imageA = Image.open(filepathA)
+    imageB = Image.open(filepathB)
+    imA = np.sum(np.asarray(imageA).astype(np.float64))
+    imB = np.sum(np.asarray(imageB).astype(np.float64))
+    err = np.sum((imA - imB) ** 2)
+    err /= float(bpy.context.scene.render.resolution_x * bpy.context.scene.render.resolution_y)
+    return err
+
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
