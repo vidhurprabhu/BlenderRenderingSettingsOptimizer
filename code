@@ -23,12 +23,6 @@ class RenderProperties(bpy.types.PropertyGroup):
     renderQuality : bpy.props.FloatProperty(name="Rendering", description="Render Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
     noiseThreshold : bpy.props.BoolProperty(name="Noise Threshold Optimizations", description="Enable Optimizations For Rendered Noise (Lowers Quality)", default=True)
     samples : bpy.props.BoolProperty(name="Render Samples Optimizations", description="Enable Optimizations For Render Samples (Lowers Quality)", default=True)
-    hdri : bpy.props.BoolProperty(name="HDRI Optimizations", description="Enable Optimizations For HDRIs (Lowers Quality)", default=True)
-
-    imageQuality : bpy.props.FloatProperty(name="Image", description="Image Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
-    colorQuality : bpy.props.FloatProperty(name="Colors", description="Color Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
-    resolution : bpy.props.BoolProperty(name="Image Resolution Optimizations", description="Enable Optimizations For Final Image Resolution (Lowers Quality)", default=True)
-    
     
     autoOptimizations : bpy.props.BoolProperty(name="Default Optimizations", description="Enable Settings For Universal Optimizations", default=True)
     
@@ -123,25 +117,7 @@ class RSO_PT_advanced_panel_render(bpy.types.Panel):
         layout.prop(renderingTools, "renderQuality", slider=True)
         layout.prop(renderingTools, "noiseThreshold")
         layout.prop(renderingTools, "samples")
-        layout.prop(renderingTools, "hdri")
         
-class RSO_PT_advanced_panel_image(bpy.types.Panel):
-    bl_label = "Image Quality Settings"
-    bl_idname = "RSO_PT_advanced_panel_image"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = "RSO"
-    bl_parent_id = "RSO_PT_head_panel"
-    bl_options = {'DEFAULT_CLOSED'}
- 
-    def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-        renderingTools = scene.renderingTools
-        
-        layout.prop(renderingTools, "imageQuality", slider=True)
-        layout.prop(renderingTools, "colorQuality", slider=True)
-        layout.prop(renderingTools, "resolution")
 
 class RSO_OT_run(bpy.types.Operator):
     bl_idname = "rso.run"
@@ -212,10 +188,17 @@ class RSO_OT_run(bpy.types.Operator):
                         sub.octree_depth = round(sub.octree_depth * renderingTools.modifierQuality/100)
                         sub.voxel_size = sub.voxel_size * sub.voxel_size * renderingTools.modifierQuality
                                 
-                                
+            # RENDER
+        if renderingTools.samples == True:
+            bpy.context.scene.cycles.samples = int(bpy.context.scene.cycles.samples * renderingTools.renderQuality/100)
+            
+        if renderingTools.samples == True:            
+            bpy.context.scene.cycles.use_adaptive_sampling = True
+            bpy.context.scene.cycles.adaptive_threshold = int(bpy.context.scene.cycles.adaptive_threshold * (1+renderingTools.renderQuality/100))
+                   
             # LIGHTING
                 
-        samples = bpy.context.scene.cycles.samples 
+        samples = bpy.context.scene.cycles.samples
         bpy.context.scene.cycles.samples = 1
         bpy.context.scene.update_tag()
         
@@ -243,7 +226,8 @@ class RSO_OT_run(bpy.types.Operator):
         testData(vals, refs, percents)
         
         resetBounces(bounces, diff, gloss, transm, vol, transp)
-                
+        bpy.context.scene.cycles.samples = samples
+        
         print("DONE")
         
         fileContent = []
@@ -290,11 +274,6 @@ class RSO_OT_run(bpy.types.Operator):
         with open(file, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(normalizedVals)
-        
-        
-            # RENDER
-            
-            # IMAGE
             
             # AUTO
             
@@ -309,7 +288,7 @@ class RSO_OT_run(bpy.types.Operator):
 
         return {"FINISHED"}
     
-classes = [RenderProperties, RSO_OT_run, RSO_PT_head_panel, RSO_PT_advanced_panel_mesh, RSO_PT_advanced_panel_mod, RSO_PT_advanced_panel_light, RSO_PT_advanced_panel_render, RSO_PT_advanced_panel_image]
+classes = [RenderProperties, RSO_OT_run, RSO_PT_head_panel, RSO_PT_advanced_panel_mesh, RSO_PT_advanced_panel_mod, RSO_PT_advanced_panel_light, RSO_PT_advanced_panel_render]
 
 
 def testData(vals, refs, percents):
