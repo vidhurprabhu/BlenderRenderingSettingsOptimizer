@@ -6,6 +6,12 @@ import csv
 import numpy as np
 from PIL import Image, ImageMath
 
+bl_info = {
+    "name": "Rendering Settings Optimizer",
+    "blender": (4, 0, 0),
+    "category": "Render",
+}
+
 
 class RenderProperties(bpy.types.PropertyGroup):
     mockFloat : bpy.props.FloatProperty(name="Mock Float", description="Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
@@ -267,7 +273,7 @@ class RSO_OT_run(bpy.types.Operator):
             val = float(row[8])
             val = val / (maxVal)
             
-            normalized = (0.5 * val) + ((1 - 0.5) * time)
+            normalized = (0.5 * val) + ((0.5) * time)
             normalizedVals.append("FINAL VALUE: " + str(normalized) + " | NAME: " + str(row[0]))
             
         file = 'D:/Blender Files/Blender Renders/Polygence/finalData.csv'
@@ -346,14 +352,13 @@ def compareImage(imageA, imageB):
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-        
         bpy.types.Scene.renderingTools = bpy.props.PointerProperty(type=RenderProperties)
  
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
         del bpy.types.Scene.renderingTools
- 
+
  
  
 if __name__ == "__main__":
