@@ -216,17 +216,17 @@ class RSO_OT_run(bpy.types.Operator):
         transm = bpy.context.scene.cycles.transmission_bounces
         vol = bpy.context.scene.cycles.volume_bounces
         transp = bpy.context.scene.cycles.transparent_max_bounces
-        print("test1")
+
         file = 'D:/Blender Files/Blender Renders/Polygence/data.csv'
 
         with open(file, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(['Name', 'Render', 'Bounces', 'Diffuse', 'Transmission', 'Volume', 'Transparent', 'Quality', 'Difference'])
-        print("test2")        
+     
         vals = [bounces, diff, gloss, transm, vol, transp]
         refs = ["bpy.context.scene.cycles.max_bounces", "bpy.context.scene.cycles.diffuse_bounces", "bpy.context.scene.cycles.glossy_bounces", "bpy.context.scene.cycles.transmission_bounces", "bpy.context.scene.cycles.volume_bounces", "bpy.context.scene.cycles.transparent_max_bounces"]
         percents = [0, 50]
-        print("test3")
+
         renderData("Default", vals[0], refs[0])
         testData(vals, refs, percents)
         resetBounces(bounces, diff, gloss, transm, vol, transp)
@@ -236,53 +236,41 @@ class RSO_OT_run(bpy.types.Operator):
         
         fileContent = []
         normalizedVals = []
-        print("test4")
         with open(file, newline='') as csvfile:
             csvreader = csv.reader(csvfile)
             header = next(csvreader)
-            print("test5")
             for row in csvreader:
                 fileContent.append(row)
-        print("test6")
         maxVal = 0
         maxTime = 0
-        minTime = 0
         
         for row in fileContent:
             
             if row[0] == "Default":
-                maxTime = float(row[1].replace(":",""))
-                minTime = float(row[1].replace(":",""))
+                defaultTime = float(row[1].replace(":",""))
             
             if maxVal < float(row[8]):
                 maxVal = float(row[8])
                 
-            if maxTime > float(row[1].replace(":","")):
-                maxTime = float(row[1].replace(":",""))
-                
-            if minTime < float(row[1].replace(":","")):
-                minTime = float(row[1].replace(":",""))
-        print("test7")
         
         for row in fileContent:
             time = float(row[1].replace(":",""))
-            time = time / (maxTime)
-            
+            time = time / defaultTime
             val = float(row[8])
-            val = val / (maxVal)
+            val = val / maxVal
             
-            normalized = (0.5 * val) + ((0.5) * time)
+            normalized = 0.5*(time)+0.5*(val)
+            print(normalized)
             normalizedVals.append("FINAL VALUE: " + str(normalized) + " | NAME: " + str(row[0]))
-        print("test8")
-            
+        
         file = 'D:/Blender Files/Blender Renders/Polygence/finalData.csv'
         with open(file, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(normalizedVals)
-        print("test9")
          
             # AUTO
-            
+        '''
+          
         for coll in bpy.data.collections:
             coll.hide_render = False
             if coll.name != "RSOCollection":
@@ -291,7 +279,7 @@ class RSO_OT_run(bpy.types.Operator):
                     
             if coll.name == "RSOCollection":
                 bpy.data.collections.remove(coll)
-
+'''
         return {"FINISHED"}
     
 classes = [RenderProperties, RSO_OT_run, RSO_PT_head_panel, RSO_PT_advanced_panel_mesh, RSO_PT_advanced_panel_mod, RSO_PT_advanced_panel_light, RSO_PT_advanced_panel_render]
