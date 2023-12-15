@@ -265,8 +265,8 @@ class RSO_OT_run(bpy.types.Operator):
         print("test7")
         
         for row in fileContent:
-            time = float(row[1].replace(":","")) - minTime
-            time = time / (maxTime - minTime)
+            time = float(row[1].replace(":",""))
+            time = time / (maxTime)
             
             val = float(row[8])
             val = val / (maxVal)
