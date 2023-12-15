@@ -193,14 +193,16 @@ class RSO_OT_run(bpy.types.Operator):
                         
                         sub.octree_depth = round(sub.octree_depth * renderingTools.modifierQuality/100)
                         sub.voxel_size = sub.voxel_size * sub.voxel_size * renderingTools.modifierQuality
-                                
+                               
             # RENDER
+            
         if renderingTools.samples == True:
             bpy.context.scene.cycles.samples = int(bpy.context.scene.cycles.samples * renderingTools.renderQuality/100)
             
         if renderingTools.samples == True:            
             bpy.context.scene.cycles.use_adaptive_sampling = True
             bpy.context.scene.cycles.adaptive_threshold = int(bpy.context.scene.cycles.adaptive_threshold * (1+renderingTools.renderQuality/100))
+           
                    
             # LIGHTING
                 
@@ -214,23 +216,19 @@ class RSO_OT_run(bpy.types.Operator):
         transm = bpy.context.scene.cycles.transmission_bounces
         vol = bpy.context.scene.cycles.volume_bounces
         transp = bpy.context.scene.cycles.transparent_max_bounces
-        
+        print("test1")
         file = 'D:/Blender Files/Blender Renders/Polygence/data.csv'
 
         with open(file, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(['Name', 'Render', 'Bounces', 'Diffuse', 'Transmission', 'Volume', 'Transparent', 'Quality', 'Difference'])
-        
-        
+        print("test2")        
         vals = [bounces, diff, gloss, transm, vol, transp]
         refs = ["bpy.context.scene.cycles.max_bounces", "bpy.context.scene.cycles.diffuse_bounces", "bpy.context.scene.cycles.glossy_bounces", "bpy.context.scene.cycles.transmission_bounces", "bpy.context.scene.cycles.volume_bounces", "bpy.context.scene.cycles.transparent_max_bounces"]
         percents = [0, 50]
-        
-        
+        print("test3")
         renderData("Default", vals[0], refs[0])
-        
         testData(vals, refs, percents)
-        
         resetBounces(bounces, diff, gloss, transm, vol, transp)
         bpy.context.scene.cycles.samples = samples
         
@@ -238,15 +236,14 @@ class RSO_OT_run(bpy.types.Operator):
         
         fileContent = []
         normalizedVals = []
-        
+        print("test4")
         with open(file, newline='') as csvfile:
             csvreader = csv.reader(csvfile)
             header = next(csvreader)
-            
+            print("test5")
             for row in csvreader:
                 fileContent.append(row)
-                
-            
+        print("test6")
         maxVal = 0
         maxTime = 0
         minTime = 0
@@ -265,6 +262,7 @@ class RSO_OT_run(bpy.types.Operator):
                 
             if minTime < float(row[1].replace(":","")):
                 minTime = float(row[1].replace(":",""))
+        print("test7")
         
         for row in fileContent:
             time = float(row[1].replace(":","")) - minTime
@@ -275,12 +273,14 @@ class RSO_OT_run(bpy.types.Operator):
             
             normalized = (0.5 * val) + ((0.5) * time)
             normalizedVals.append("FINAL VALUE: " + str(normalized) + " | NAME: " + str(row[0]))
+        print("test8")
             
         file = 'D:/Blender Files/Blender Renders/Polygence/finalData.csv'
         with open(file, 'w', newline='') as csvfile:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerow(normalizedVals)
-            
+        print("test9")
+         
             # AUTO
             
         for coll in bpy.data.collections:
@@ -306,16 +306,17 @@ def testData(vals, refs, percents):
             exec(f"{ref} = {val}")
     
 def renderData(name, edit, editName):
-     
     for coll in bpy.data.collections:
         if coll.name == "RSOCollection":
             coll.hide_render = False
+            '''
             for c in coll.all_objects:
-                c.hide_render = False 
-     
+                print("BREAKAD")
+                c.hide_render = False
+                print("BREAKAE")
+        '''
     edit = int(edit)
     exec(f"{editName} = {edit}")
-    
     filepath = 'D:/Blender Files/Blender Renders/Polygence/TestSample' + name + '.png'
     bpy.context.scene.render.filepath = filepath
     start = datetime.now()
@@ -323,9 +324,7 @@ def renderData(name, edit, editName):
     end = datetime.now() - start
     
     file = 'D:/Blender Files/Blender Renders/Polygence/data.csv'
-    
     err = compareImage("Default", name)
-    
     with open(file, 'a', newline='') as csvfile:
         csvwriter = csv.writer(csvfile)
         csvwriter.writerow([name, end, bpy.context.scene.cycles.max_bounces, bpy.context.scene.cycles.diffuse_bounces, bpy.context.scene.cycles.glossy_bounces, bpy.context.scene.cycles.transmission_bounces, bpy.context.scene.cycles.volume_bounces, bpy.context.scene.cycles.transparent_max_bounces, err])
@@ -357,8 +356,7 @@ def register():
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
-        del bpy.types.Scene.renderingTools
-
+ 
  
  
 if __name__ == "__main__":
