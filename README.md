@@ -12,10 +12,13 @@ The installation directions are the same as all other addons.
 4) Click on the "Install" button in the top right.
 5) Find the location where you downloaded the addon, select it, and click "Install Add-on."
 6) In search, find the Addon under "Render: Rendering Settings Optimizer"
-7) 
+7) Enable the addon.
+8) Installation Complete! Reference the User Guide for more instructions.
 
 # Screenshots
 
 # User Guide
+1) After installing the extension, you can find the control pannel in the "N" sidebar.
+2) From there 
 
 # Examples
