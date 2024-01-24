@@ -6,13 +6,14 @@ import csv
 import numpy as np
 from PIL import Image, ImageMath
 
+# Addon Info
 bl_info = {
     "name": "Rendering Settings Optimizer",
     "blender": (4, 0, 0),
     "category": "Render",
 }
 
-
+# Register Buttons
 class RenderProperties(bpy.types.PropertyGroup):
     mockFloat : bpy.props.FloatProperty(name="Mock Float", description="Quality vs. Optimization, In Percentage", min=0, max=100, default=50)
     mockBool : bpy.props.BoolProperty(name="Mock Boolean", description="Enable Setting", default=True)
@@ -34,7 +35,7 @@ class RenderProperties(bpy.types.PropertyGroup):
     
     finalRender : bpy.props.BoolProperty(name="Final Render Mode", description="Enable Finalized Rendering Mode (Highest Fidelity)", default=False)
 
-
+# Default Panel
 class RSO_PT_head_panel(bpy.types.Panel):
     bl_label = "Rendering Settings Optimizer"
     bl_idname = "RSO_PT_head_panel"
@@ -53,7 +54,7 @@ class RSO_PT_head_panel(bpy.types.Panel):
         layout.operator("rso.run")
         
         
-
+# Main Panel
 class RSO_PT_advanced_panel_mesh(bpy.types.Panel):
     bl_label = "Mesh Quality Settings"
     bl_idname = "RSO_PT_advanced_panel_mesh"
@@ -69,7 +70,8 @@ class RSO_PT_advanced_panel_mesh(bpy.types.Panel):
         renderingTools = scene.renderingTools
         
         layout.prop(renderingTools, "meshQuality", slider=True)
-        
+
+# Subsettings
 class RSO_PT_advanced_panel_mod(bpy.types.Panel):
     bl_label = "Modifier Quality Settings"
     bl_idname = "RSO_PT_advanced_panel_mod"
@@ -89,7 +91,8 @@ class RSO_PT_advanced_panel_mod(bpy.types.Panel):
         layout.prop(renderingTools, "bevelMod")
         layout.prop(renderingTools, "remeshMod")
         layout.prop(renderingTools, "smoothMod")
-        
+
+# Lighting Settings
 class RSO_PT_advanced_panel_light(bpy.types.Panel):
     bl_label = "Lighting Quality Settings"
     bl_idname = "RSO_PT_advanced_panel_light"
@@ -105,9 +108,10 @@ class RSO_PT_advanced_panel_light(bpy.types.Panel):
         renderingTools = scene.renderingTools
         
         layout.prop(renderingTools, "lightingQuality", slider=True)
-        
+
+# Camera Settings Options
 class RSO_PT_advanced_panel_render(bpy.types.Panel):
-    bl_label = "Render Quality Settings"
+    bl_label = "Camera Settings"
     bl_idname = "RSO_PT_advanced_panel_render"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -124,7 +128,7 @@ class RSO_PT_advanced_panel_render(bpy.types.Panel):
         layout.prop(renderingTools, "noiseThreshold")
         layout.prop(renderingTools, "samples")
         
-
+# Apply Settings
 class RSO_OT_run(bpy.types.Operator):
     bl_idname = "rso.run"
     bl_label = "Apply Settings"
@@ -284,7 +288,7 @@ class RSO_OT_run(bpy.types.Operator):
     
 classes = [RenderProperties, RSO_OT_run, RSO_PT_head_panel, RSO_PT_advanced_panel_mesh, RSO_PT_advanced_panel_mod, RSO_PT_advanced_panel_light, RSO_PT_advanced_panel_render]
 
-
+# Testing Data
 def testData(vals, refs, percents):
     for ref in refs:
         for percent in percents:
@@ -292,7 +296,8 @@ def testData(vals, refs, percents):
             name = "".join([str(ref), str(f"{percent : 04d}")])
             renderData(name, (percent*val/100), ref)
             exec(f"{ref} = {val}")
-    
+
+# Rendering Data
 def renderData(name, edit, editName):
     for coll in bpy.data.collections:
         if coll.name == "RSOCollection":
@@ -316,7 +321,8 @@ def renderData(name, edit, editName):
     with open(file, 'a', newline='') as csvfile:
         csvwriter = csv.writer(csvfile)
         csvwriter.writerow([name, end, bpy.context.scene.cycles.max_bounces, bpy.context.scene.cycles.diffuse_bounces, bpy.context.scene.cycles.glossy_bounces, bpy.context.scene.cycles.transmission_bounces, bpy.context.scene.cycles.volume_bounces, bpy.context.scene.cycles.transparent_max_bounces, err])
-        
+
+# Reset Bounce Values
 def resetBounces(bounces, diff, gloss, transm, vol, transp):
     bpy.context.scene.cycles.max_bounces = bounces
     bpy.context.scene.cycles.diffuse_bounces = diff
@@ -324,7 +330,8 @@ def resetBounces(bounces, diff, gloss, transm, vol, transp):
     bpy.context.scene.cycles.transmission_bounces = transm
     bpy.context.scene.cycles.volume_bounces = vol
     bpy.context.scene.cycles.transparent_max_bounces = transp
-    
+
+# Compare Two Images
 def compareImage(imageA, imageB):
     filepathA = 'D:/Blender Files/Blender Renders/Polygence/TestSample' + imageA + '.png'
     filepathB = 'D:/Blender Files/Blender Renders/Polygence/TestSample' + imageB + '.png'
@@ -336,6 +343,7 @@ def compareImage(imageA, imageB):
     err /= float(bpy.context.scene.render.resolution_x * bpy.context.scene.render.resolution_y)
     return err
 
+# Register/Unregister Addons
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
