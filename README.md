@@ -19,6 +19,11 @@ The installation directions are the same as all other addons.
 
 # User Guide
 1) After installing the extension, you can find the control pannel in the "N" sidebar.
-2) From there 
+2) From there, you can edit all the settings on the panel:
+   ![image](https://github.com/vidhurprabhu/BlenderRenderingSettingsOptimizer/assets/75861377/0eeb8006-1b7e-4abf-9ca4-8c1e33934f4d)
+
+4) When you finish picking the values, click apply settings and let the program run until the progress bar finishes. This should take any number of minutes, based on your scene.
+5) The settings should automatically apply after. You can render your scene with the changes in place.
+6) To reset the values back to default, click on the "Final Render Mode" button.
 
 # Examples
