@@ -1,4 +1,4 @@
-# Blender Rendering Settings Optimizer ![cube](https://github.com/vidhurprabhu/BlenderRenderingSettingsOptimizer/assets/75861377/c6cc5d78-9135-403b-8eb1-8ab8a56b3e71)
+# RenderWise: Blender Rendering Settings Optimizer ![cube](https://github.com/vidhurprabhu/BlenderRenderingSettingsOptimizer/assets/75861377/c6cc5d78-9135-403b-8eb1-8ab8a56b3e71)
 
 An extension for the Blender 3D software to optimize rendering settings and decrease render time without reducing quality.
 
