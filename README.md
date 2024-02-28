@@ -19,7 +19,7 @@ The installation directions are the same as all other addons.
 # Screenshots
 
 # User Guide
-1) After installing the extension, you can find the control pannel in the "N" sidebar.
+1) After installing the extension, you can find the control panel in the "N" sidebar.
 2) From there, you can edit all the settings on the panel:
    
    ![image](https://github.com/vidhurprabhu/BlenderRenderingSettingsOptimizer/assets/75861377/0eeb8006-1b7e-4abf-9ca4-8c1e33934f4d)
